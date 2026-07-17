@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../widgets/simple_list_screen.dart';
+import '../widgets/create_vehicle_dialog.dart';
+import '../widgets/create_customer_dialog.dart';
+import '../widgets/create_driver_dialog.dart';
+import '../widgets/create_order_dialog.dart';
+import '../widgets/dispatch_trip_dialog.dart';
 import 'login_screen.dart';
+import 'trip_detail_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -13,6 +19,12 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _selectedIndex = 0;
   final _api = ApiClient();
+
+  final _vehiclesController = ListRefreshController();
+  final _customersController = ListRefreshController();
+  final _driversController = ListRefreshController();
+  final _ordersController = ListRefreshController();
+  final _tripsController = ListRefreshController();
 
   static const _destinations = [
     (icon: Icons.local_shipping, label: 'Vehicles'),
@@ -34,6 +46,7 @@ class _HomeShellState extends State<HomeShell> {
         return SimpleListScreen(
           title: 'Vehicles',
           endpoint: '/vehicles',
+          controller: _vehiclesController,
           itemBuilder: (context, v) => ListTile(
             leading: const Icon(Icons.local_shipping),
             title: Text(v['plateNumber'] ?? ''),
@@ -45,6 +58,7 @@ class _HomeShellState extends State<HomeShell> {
         return SimpleListScreen(
           title: 'Drivers',
           endpoint: '/drivers',
+          controller: _driversController,
           itemBuilder: (context, d) => ListTile(
             leading: const Icon(Icons.person),
             title: Text(d['fullName'] ?? ''),
@@ -59,6 +73,7 @@ class _HomeShellState extends State<HomeShell> {
         return SimpleListScreen(
           title: 'Customers',
           endpoint: '/customers',
+          controller: _customersController,
           itemBuilder: (context, c) => ListTile(
             leading: const Icon(Icons.store),
             title: Text(c['name'] ?? ''),
@@ -70,6 +85,7 @@ class _HomeShellState extends State<HomeShell> {
         return SimpleListScreen(
           title: 'Orders',
           endpoint: '/orders',
+          controller: _ordersController,
           itemBuilder: (context, o) => ListTile(
             leading: const Icon(Icons.receipt_long),
             title: Text(o['orderNumber'] ?? ''),
@@ -81,17 +97,52 @@ class _HomeShellState extends State<HomeShell> {
         return SimpleListScreen(
           title: 'Trips',
           endpoint: '/trips',
+          controller: _tripsController,
           itemBuilder: (context, t) => ListTile(
             leading: const Icon(Icons.route),
             title: Text(t['transportOrder']?['orderNumber'] ?? t['id'] ?? ''),
             subtitle: Text('${t['vehicle']?['plateNumber'] ?? ''} — ${t['driver']?['fullName'] ?? ''}'),
             trailing: Chip(label: Text(t['status'] ?? '')),
+            onTap: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => TripDetailScreen(tripId: t['id'] as String)),
+              );
+              _tripsController.refresh();
+            },
           ),
         );
       default:
         return const SizedBox.shrink();
     }
   }
+
+  Future<void> _onFabPressed() async {
+    bool? created;
+    switch (_selectedIndex) {
+      case 0:
+        created = await showCreateVehicleDialog(context);
+        if (created == true) _vehiclesController.refresh();
+        break;
+      case 1:
+        created = await showCreateDriverDialog(context);
+        if (created == true) _driversController.refresh();
+        break;
+      case 2:
+        created = await showCreateCustomerDialog(context);
+        if (created == true) _customersController.refresh();
+        break;
+      case 3:
+        created = await showCreateOrderDialog(context);
+        if (created == true) _ordersController.refresh();
+        break;
+      case 4:
+        created = await showDispatchTripDialog(context);
+        if (created == true) _tripsController.refresh();
+        break;
+    }
+  }
+
+  bool get _hasFabForCurrentTab => _selectedIndex >= 0 && _selectedIndex <= 4;
 
   @override
   Widget build(BuildContext context) {
@@ -104,6 +155,9 @@ class _HomeShellState extends State<HomeShell> {
         title: Text('Fleet Ops — ${_destinations[_selectedIndex].label}'),
         actions: [IconButton(icon: const Icon(Icons.logout), onPressed: _logout)],
       ),
+      floatingActionButton: _hasFabForCurrentTab
+          ? FloatingActionButton(onPressed: _onFabPressed, child: const Icon(Icons.add))
+          : null,
       body: isWide
           ? Row(
               children: [

@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 
+class ListRefreshController {
+  VoidCallback? _reload;
+  void _attach(VoidCallback reload) => _reload = reload;
+  void refresh() => _reload?.call();
+}
+
 class SimpleListScreen extends StatefulWidget {
   final String title;
   final String endpoint;
   final Widget Function(BuildContext context, dynamic item) itemBuilder;
-  final VoidCallback? onLogout;
+  final ListRefreshController? controller;
 
   const SimpleListScreen({
     super.key,
     required this.title,
     required this.endpoint,
     required this.itemBuilder,
-    this.onLogout,
+    this.controller,
   });
 
   @override
@@ -27,12 +33,14 @@ class _SimpleListScreenState extends State<SimpleListScreen> {
   @override
   void initState() {
     super.initState();
+    widget.controller?._attach(_load);
     _load();
   }
 
   @override
   void didUpdateWidget(covariant SimpleListScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    widget.controller?._attach(_load);
     if (oldWidget.endpoint != widget.endpoint) _load();
   }
 
