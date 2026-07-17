@@ -8,6 +8,8 @@ import '../widgets/create_order_dialog.dart';
 import '../widgets/dispatch_trip_dialog.dart';
 import '../widgets/vehicle_detail_dialog.dart';
 import '../widgets/driver_detail_dialog.dart';
+import '../widgets/customer_detail_dialog.dart';
+import '../widgets/order_detail_dialog.dart';
 import 'login_screen.dart';
 import 'trip_detail_screen.dart';
 import 'dashboard_summary_screen.dart';
@@ -93,6 +95,10 @@ class _HomeShellState extends State<HomeShell> {
             title: Text(c['name'] ?? ''),
             subtitle: Text(c['contactName'] ?? ''),
             trailing: Text(c['contactPhone'] ?? ''),
+            onTap: () async {
+              final changed = await showCustomerDetailDialog(context, c as Map<String, dynamic>);
+              if (changed == true) _customersController.refresh();
+            },
           ),
         );
       case 4:
@@ -105,6 +111,10 @@ class _HomeShellState extends State<HomeShell> {
             title: Text(o['orderNumber'] ?? ''),
             subtitle: Text('${o['pickupLocation'] ?? ''} → ${o['destinationLocation'] ?? ''}'),
             trailing: Chip(label: Text(o['status'] ?? '')),
+            onTap: () async {
+              final changed = await showOrderDetailDialog(context, o as Map<String, dynamic>);
+              if (changed == true) _ordersController.refresh();
+            },
           ),
         );
       case 5:
