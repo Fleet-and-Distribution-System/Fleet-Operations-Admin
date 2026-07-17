@@ -10,6 +10,7 @@ import '../widgets/vehicle_detail_dialog.dart';
 import '../widgets/driver_detail_dialog.dart';
 import 'login_screen.dart';
 import 'trip_detail_screen.dart';
+import 'dashboard_summary_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -29,6 +30,7 @@ class _HomeShellState extends State<HomeShell> {
   final _tripsController = ListRefreshController();
 
   static const _destinations = [
+    (icon: Icons.dashboard, label: 'Dashboard'),
     (icon: Icons.local_shipping, label: 'Vehicles'),
     (icon: Icons.person, label: 'Drivers'),
     (icon: Icons.store, label: 'Customers'),
@@ -45,6 +47,8 @@ class _HomeShellState extends State<HomeShell> {
   Widget _buildScreen(int index) {
     switch (index) {
       case 0:
+        return const DashboardSummaryScreen();
+      case 1:
         return SimpleListScreen(
           title: 'Vehicles',
           endpoint: '/vehicles',
@@ -60,7 +64,7 @@ class _HomeShellState extends State<HomeShell> {
             },
           ),
         );
-      case 1:
+      case 2:
         return SimpleListScreen(
           title: 'Drivers',
           endpoint: '/drivers',
@@ -79,7 +83,7 @@ class _HomeShellState extends State<HomeShell> {
             },
           ),
         );
-      case 2:
+      case 3:
         return SimpleListScreen(
           title: 'Customers',
           endpoint: '/customers',
@@ -91,7 +95,7 @@ class _HomeShellState extends State<HomeShell> {
             trailing: Text(c['contactPhone'] ?? ''),
           ),
         );
-      case 3:
+      case 4:
         return SimpleListScreen(
           title: 'Orders',
           endpoint: '/orders',
@@ -103,7 +107,7 @@ class _HomeShellState extends State<HomeShell> {
             trailing: Chip(label: Text(o['status'] ?? '')),
           ),
         );
-      case 4:
+      case 5:
         return SimpleListScreen(
           title: 'Trips',
           endpoint: '/trips',
@@ -129,30 +133,30 @@ class _HomeShellState extends State<HomeShell> {
   Future<void> _onFabPressed() async {
     bool? created;
     switch (_selectedIndex) {
-      case 0:
+      case 1:
         created = await showCreateVehicleDialog(context);
         if (created == true) _vehiclesController.refresh();
         break;
-      case 1:
+      case 2:
         created = await showCreateDriverDialog(context);
         if (created == true) _driversController.refresh();
         break;
-      case 2:
+      case 3:
         created = await showCreateCustomerDialog(context);
         if (created == true) _customersController.refresh();
         break;
-      case 3:
+      case 4:
         created = await showCreateOrderDialog(context);
         if (created == true) _ordersController.refresh();
         break;
-      case 4:
+      case 5:
         created = await showDispatchTripDialog(context);
         if (created == true) _tripsController.refresh();
         break;
     }
   }
 
-  bool get _hasFabForCurrentTab => _selectedIndex >= 0 && _selectedIndex <= 4;
+  bool get _hasFabForCurrentTab => _selectedIndex >= 1 && _selectedIndex <= 5;
 
   @override
   Widget build(BuildContext context) {
