@@ -6,6 +6,8 @@ import '../widgets/create_customer_dialog.dart';
 import '../widgets/create_driver_dialog.dart';
 import '../widgets/create_order_dialog.dart';
 import '../widgets/dispatch_trip_dialog.dart';
+import '../widgets/vehicle_detail_dialog.dart';
+import '../widgets/driver_detail_dialog.dart';
 import 'login_screen.dart';
 import 'trip_detail_screen.dart';
 
@@ -52,6 +54,10 @@ class _HomeShellState extends State<HomeShell> {
             title: Text(v['plateNumber'] ?? ''),
             subtitle: Text('${v['make'] ?? ''} ${v['model'] ?? ''} — ${v['vehicleType'] ?? ''}'),
             trailing: Chip(label: Text(v['status'] ?? '')),
+            onTap: () async {
+              final changed = await showVehicleDetailDialog(context, v as Map<String, dynamic>);
+              if (changed == true) _vehiclesController.refresh();
+            },
           ),
         );
       case 1:
@@ -67,6 +73,10 @@ class _HomeShellState extends State<HomeShell> {
               label: Text(d['isActive'] == true ? 'ACTIVE' : 'INACTIVE'),
               backgroundColor: d['isActive'] == true ? null : Colors.grey.shade300,
             ),
+            onTap: () async {
+              final changed = await showDriverDetailDialog(context, d as Map<String, dynamic>);
+              if (changed == true) _driversController.refresh();
+            },
           ),
         );
       case 2:
