@@ -63,7 +63,7 @@ class _OrderDetailDialogState extends State<_OrderDetailDialog> {
             _kv('Pickup', o['pickupLocation']),
             _kv('Destination', o['destinationLocation']),
             _kv('Cargo', o['cargoDescription']),
-            if (o['weightKg'] != null) _kv('Weight', '${o['weightKg']} kg'),
+            if (o['quantityLitres'] != null) _kv('Quantity', '${o['quantityLitres']} litres'),
             _kv('Priority', o['priority']),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
