@@ -10,6 +10,8 @@ import '../widgets/vehicle_detail_dialog.dart';
 import '../widgets/driver_detail_dialog.dart';
 import '../widgets/customer_detail_dialog.dart';
 import '../widgets/order_detail_dialog.dart';
+import '../widgets/create_location_dialog.dart';
+import '../widgets/location_detail_dialog.dart';
 import 'login_screen.dart';
 import 'trip_detail_screen.dart';
 import 'dashboard_summary_screen.dart';
@@ -30,6 +32,7 @@ class _HomeShellState extends State<HomeShell> {
   final _driversController = ListRefreshController();
   final _ordersController = ListRefreshController();
   final _tripsController = ListRefreshController();
+  final _locationsController = ListRefreshController();
 
   static const _destinations = [
     (icon: Icons.dashboard, label: 'Dashboard'),
@@ -38,6 +41,7 @@ class _HomeShellState extends State<HomeShell> {
     (icon: Icons.store, label: 'Customers'),
     (icon: Icons.receipt_long, label: 'Orders'),
     (icon: Icons.route, label: 'Trips'),
+    (icon: Icons.place, label: 'Locations'),
   ];
 
   Future<void> _logout() async {
@@ -135,6 +139,25 @@ class _HomeShellState extends State<HomeShell> {
             },
           ),
         );
+      case 6:
+        return SimpleListScreen(
+          title: 'Locations',
+          endpoint: '/locations',
+          controller: _locationsController,
+          itemBuilder: (context, l) => ListTile(
+            leading: const Icon(Icons.place),
+            title: Text(l['name'] ?? ''),
+            subtitle: Text('${l['type'] ?? ''}${l['address'] != null ? ' — ${l['address']}' : ''}'),
+            trailing: Chip(
+              label: Text(l['isActive'] == true ? 'ACTIVE' : 'INACTIVE'),
+              backgroundColor: l['isActive'] == true ? null : Colors.grey.shade300,
+            ),
+            onTap: () async {
+              final changed = await showLocationDetailDialog(context, l as Map<String, dynamic>);
+              if (changed == true) _locationsController.refresh();
+            },
+          ),
+        );
       default:
         return const SizedBox.shrink();
     }
@@ -163,10 +186,14 @@ class _HomeShellState extends State<HomeShell> {
         created = await showDispatchTripDialog(context);
         if (created == true) _tripsController.refresh();
         break;
+      case 6:
+        created = await showCreateLocationDialog(context);
+        if (created == true) _locationsController.refresh();
+        break;
     }
   }
 
-  bool get _hasFabForCurrentTab => _selectedIndex >= 1 && _selectedIndex <= 5;
+  bool get _hasFabForCurrentTab => _selectedIndex >= 1 && _selectedIndex <= 6;
 
   @override
   Widget build(BuildContext context) {
