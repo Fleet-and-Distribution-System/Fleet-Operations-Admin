@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -73,5 +74,13 @@ class ApiClient {
       body: jsonEncode(data),
     );
     return _handleResponse(response);
+  }
+
+  Future<Uint8List> getBytes(String path) async {
+    final response = await http.get(Uri.parse('$apiBaseUrl$path'), headers: await _headers());
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException('Download failed (${response.statusCode})', response.statusCode);
+    }
+    return response.bodyBytes;
   }
 }

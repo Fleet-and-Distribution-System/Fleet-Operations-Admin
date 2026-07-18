@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../widgets/create_waybill_dialog.dart';
 import '../widgets/record_pod_dialog.dart';
+import '../web_download.dart';
 
 class TripDetailScreen extends StatefulWidget {
   final String tripId;
@@ -16,6 +17,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   Map<String, dynamic>? _trip;
   String? _error;
   bool _actionInProgress = false;
+  bool _downloadingPdf = false;
 
   @override
   void initState() {
@@ -106,6 +108,14 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
           _sectionTitle('Waybill'),
           _kv('Waybill number', waybill['waybillNumber']),
           _kv('Signed by', waybill['signedByName']),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _downloadingPdf ? null : () => _downloadPdf(waybill['id'] as String, waybill['waybillNumber'] as String),
+            icon: _downloadingPdf
+                ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.picture_as_pdf),
+            label: Text(_downloadingPdf ? 'Downloading…' : 'Download PDF'),
+          ),
         ],
         const SizedBox(height: 32),
         _buildActions(status),
@@ -176,6 +186,22 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     if (waybill == null) return;
     final saved = await showRecordPodDialog(context, waybill['id'] as String);
     if (saved == true) await _load();
+  }
+
+  Future<void> _downloadPdf(String waybillId, String waybillNumber) async {
+    setState(() => _downloadingPdf = true);
+    try {
+      final bytes = await _api.getBytes('/waybills/$waybillId/pdf');
+      downloadBytesAsFile(bytes, '$waybillNumber.pdf');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not download the PDF.')));
+    } finally {
+      if (mounted) setState(() => _downloadingPdf = false);
+    }
   }
 
   Widget _sectionTitle(String text) => Padding(
