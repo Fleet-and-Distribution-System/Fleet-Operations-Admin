@@ -15,6 +15,7 @@ import '../widgets/location_detail_dialog.dart';
 import 'login_screen.dart';
 import 'trip_detail_screen.dart';
 import 'dashboard_summary_screen.dart';
+import 'company_settings_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -204,7 +205,16 @@ class _HomeShellState extends State<HomeShell> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Fleet Ops — ${_destinations[_selectedIndex].label}'),
-        actions: [IconButton(icon: const Icon(Icons.logout), onPressed: _logout)],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Company Settings',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CompanySettingsScreen()),
+            ),
+          ),
+          IconButton(icon: const Icon(Icons.logout), onPressed: _logout),
+        ],
       ),
       floatingActionButton: _hasFabForCurrentTab
           ? FloatingActionButton(onPressed: _onFabPressed, child: const Icon(Icons.add))
