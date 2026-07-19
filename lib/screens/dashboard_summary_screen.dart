@@ -52,6 +52,13 @@ class _DashboardSummaryScreenState extends State<DashboardSummaryScreen> {
         ordersByStatus[s] = (ordersByStatus[s] ?? 0) + 1;
       }
 
+      double totalCost = 0;
+      for (final t in trips) {
+        if (t['status'] == 'DELIVERED' && t['tripCost'] != null) {
+          totalCost += (t['tripCost'] as num).toDouble();
+        }
+      }
+
       if (!mounted) return;
       setState(() {
         _summary = {
@@ -60,6 +67,7 @@ class _DashboardSummaryScreenState extends State<DashboardSummaryScreen> {
           'activeDrivers': drivers.where((d) => d['isActive'] == true).length,
           'totalOrders': orders.length,
           'totalTrips': trips.length,
+          'totalCost': totalCost,
           'vehiclesByStatus': vehiclesByStatus,
           'tripsByStatus': tripsByStatus,
           'ordersByStatus': ordersByStatus,
@@ -104,6 +112,7 @@ class _DashboardSummaryScreenState extends State<DashboardSummaryScreen> {
             _statCard('Drivers', '${s['activeDrivers']} / ${s['totalDrivers']} active', Icons.person, Colors.teal),
             _statCard('Orders', s['totalOrders'].toString(), Icons.receipt_long, Colors.orange),
             _statCard('Trips', s['totalTrips'].toString(), Icons.route, Colors.purple),
+            _statCard('Total Cost (Delivered)', '₦${(s['totalCost'] as double).toStringAsFixed(2)}', Icons.attach_money, Colors.green),
           ],
         ),
         const SizedBox(height: 32),

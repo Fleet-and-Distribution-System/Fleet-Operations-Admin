@@ -18,6 +18,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   String? _error;
   bool _actionInProgress = false;
   bool _downloadingPdf = false;
+  bool _settingCost = false;
 
   @override
   void initState() {
@@ -103,6 +104,17 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         _kv('Planned departure', t['plannedDeparture']),
         _kv('Actual departure', t['actualDeparture']),
         _kv('Actual arrival', t['actualArrival']),
+        const SizedBox(height: 16),
+        _sectionTitle('Cost'),
+        _kv('Trip cost', t['tripCost'] != null ? '₦${t['tripCost']}' : null),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: _settingCost ? null : () => _showSetCostDialog(t['tripCost'] as num?),
+          icon: _settingCost
+              ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.attach_money),
+          label: Text(t['tripCost'] != null ? 'Update Cost' : 'Set Cost'),
+        ),
         if (waybill != null) ...[
           const SizedBox(height: 16),
           _sectionTitle('Waybill'),
@@ -186,6 +198,47 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     if (waybill == null) return;
     final saved = await showRecordPodDialog(context, waybill['id'] as String);
     if (saved == true) await _load();
+  }
+
+  Future<void> _showSetCostDialog(num? currentCost) async {
+    final controller = TextEditingController(text: currentCost?.toString() ?? '');
+    final result = await showDialog<double>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Set Trip Cost'),
+        content: TextField(
+          controller: controller,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(labelText: 'Cost (₦)', border: OutlineInputBorder()),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () {
+              final value = double.tryParse(controller.text.trim());
+              Navigator.of(context).pop(value);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (result == null) return;
+
+    setState(() => _settingCost = true);
+    try {
+      await _api.patch('/trips/${widget.tripId}/cost', {'tripCost': result});
+      await _load();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not reach the server.')));
+    } finally {
+      if (mounted) setState(() => _settingCost = false);
+    }
   }
 
   Future<void> _downloadPdf(String waybillId, String waybillNumber) async {
