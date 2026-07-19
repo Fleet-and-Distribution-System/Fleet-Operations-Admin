@@ -25,7 +25,9 @@ class _DriverDetailDialogState extends State<_DriverDetailDialog> {
 
   late bool _isActive;
   bool _saving = false;
+  bool _resettingPassword = false;
   String? _error;
+  String? _resetMessage;
 
   @override
   void initState() {
@@ -62,6 +64,59 @@ class _DriverDetailDialogState extends State<_DriverDetailDialog> {
     }
   }
 
+  bool get _hasLogin => widget.driver['userId'] != null || widget.driver['phone'] != null;
+
+  Future<void> _showResetPasswordDialog() async {
+    final controller = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final newPassword = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Driver Password'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            decoration: const InputDecoration(labelText: 'New password', border: OutlineInputBorder()),
+            obscureText: true,
+            validator: (v) => (v == null || v.length < 6) ? 'At least 6 characters' : null,
+            autofocus: true,
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.of(context).pop(controller.text);
+              }
+            },
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+    if (newPassword == null) return;
+
+    setState(() {
+      _resettingPassword = true;
+      _resetMessage = null;
+    });
+    try {
+      await _api.patch('/drivers/${widget.driver['id']}/reset-password', {'newPassword': newPassword});
+      if (!mounted) return;
+      setState(() => _resetMessage = 'Password reset successfully.');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _resetMessage = e.message);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _resetMessage = 'Could not reach the server.');
+    } finally {
+      if (mounted) setState(() => _resettingPassword = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -91,6 +146,26 @@ class _DriverDetailDialogState extends State<_DriverDetailDialog> {
                 value: _isActive,
                 onChanged: (v) => setState(() => _isActive = v),
               ),
+              if (_hasLogin) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    onPressed: _resettingPassword ? null : _showResetPasswordDialog,
+                    icon: _resettingPassword
+                        ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.lock_reset),
+                    label: const Text('Reset Password'),
+                  ),
+                ),
+                if (_resetMessage != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    _resetMessage!,
+                    style: TextStyle(color: _resetMessage!.contains('success') ? Colors.green : Colors.red, fontSize: 12),
+                  ),
+                ],
+              ],
               if (_error != null) ...[
                 const SizedBox(height: 12),
                 Text(_error!, style: const TextStyle(color: Colors.red)),

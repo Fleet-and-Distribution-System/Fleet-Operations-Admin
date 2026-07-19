@@ -34,7 +34,20 @@ class _StartupGateState extends State<_StartupGate> {
   @override
   void initState() {
     super.initState();
-    _api.isLoggedIn.then((value) => setState(() => _loggedIn = value));
+    _checkSession();
+  }
+
+  Future<void> _checkSession() async {
+    final loggedIn = await _api.isLoggedIn;
+    if (loggedIn) {
+      final role = await _api.role;
+      if (role == null || role == 'DRIVER') {
+        await _api.clearToken();
+        if (mounted) setState(() => _loggedIn = false);
+        return;
+      }
+    }
+    if (mounted) setState(() => _loggedIn = loggedIn);
   }
 
   @override

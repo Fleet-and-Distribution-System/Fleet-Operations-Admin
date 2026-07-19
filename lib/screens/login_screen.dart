@@ -33,7 +33,13 @@ class _LoginScreenState extends State<LoginScreen> {
         'password': _passwordController.text,
       }, auth: false);
 
-      await _api.saveToken(result['accessToken']);
+      final role = result['role'] as String?;
+      if (role == 'DRIVER') {
+        setState(() => _error = 'This account is a driver account. Please use the Fleet Ops Driver app instead.');
+        return;
+      }
+
+      await _api.saveToken(result['accessToken'], role: role);
 
       if (!mounted) return;
       Navigator.of(context).pushReplacement(

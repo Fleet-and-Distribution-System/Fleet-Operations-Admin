@@ -15,20 +15,28 @@ class ApiException implements Exception {
 
 class ApiClient {
   static const _tokenKey = 'accessToken';
+  static const _roleKey = 'userRole';
 
   Future<String?> get _token async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_tokenKey);
   }
 
-  Future<void> saveToken(String token) async {
+  Future<void> saveToken(String token, {String? role}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
+    if (role != null) await prefs.setString(_roleKey, role);
+  }
+
+  Future<String?> get role async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_roleKey);
   }
 
   Future<void> clearToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
+    await prefs.remove(_roleKey);
   }
 
   Future<bool> get isLoggedIn async => (await _token) != null;
