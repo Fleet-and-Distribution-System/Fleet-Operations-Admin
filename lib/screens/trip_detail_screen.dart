@@ -105,15 +105,28 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         _kv('Actual departure', t['actualDeparture']),
         _kv('Actual arrival', t['actualArrival']),
         const SizedBox(height: 16),
-        _sectionTitle('Cost'),
+        _sectionTitle('Cost & Revenue'),
         _kv('Trip cost', t['tripCost'] != null ? '₦${t['tripCost']}' : null),
+        _kv('Revenue', t['revenue'] != null ? '₦${t['revenue']}' : null),
+        if (t['tripCost'] != null && t['revenue'] != null)
+          _kv('Profit', '₦${((t['revenue'] as num) - (t['tripCost'] as num)).toStringAsFixed(2)}'),
         const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed: _settingCost ? null : () => _showSetCostDialog(t['tripCost'] as num?),
-          icon: _settingCost
-              ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.attach_money),
-          label: Text(t['tripCost'] != null ? 'Update Cost' : 'Set Cost'),
+        Wrap(
+          spacing: 8,
+          children: [
+            OutlinedButton.icon(
+              onPressed: _settingCost ? null : () => _showAmountDialog('cost', t['tripCost'] as num?),
+              icon: _settingCost
+                  ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.attach_money),
+              label: Text(t['tripCost'] != null ? 'Update Cost' : 'Set Cost'),
+            ),
+            OutlinedButton.icon(
+              onPressed: _settingCost ? null : () => _showAmountDialog('revenue', t['revenue'] as num?),
+              icon: const Icon(Icons.trending_up),
+              label: Text(t['revenue'] != null ? 'Update Revenue' : 'Set Revenue'),
+            ),
+          ],
         ),
         if (waybill != null) ...[
           const SizedBox(height: 16),
@@ -200,16 +213,17 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     if (saved == true) await _load();
   }
 
-  Future<void> _showSetCostDialog(num? currentCost) async {
-    final controller = TextEditingController(text: currentCost?.toString() ?? '');
+  Future<void> _showAmountDialog(String field, num? currentValue) async {
+    final controller = TextEditingController(text: currentValue?.toString() ?? '');
+    final label = field == 'cost' ? 'Trip Cost' : 'Revenue';
     final result = await showDialog<double>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Set Trip Cost'),
+        title: Text('Set $label'),
         content: TextField(
           controller: controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: 'Cost (₦)', border: OutlineInputBorder()),
+          decoration: InputDecoration(labelText: '$label (₦)', border: const OutlineInputBorder()),
           autofocus: true,
         ),
         actions: [
@@ -228,7 +242,8 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
 
     setState(() => _settingCost = true);
     try {
-      await _api.patch('/trips/${widget.tripId}/cost', {'tripCost': result});
+      final bodyKey = field == 'cost' ? 'tripCost' : 'revenue';
+      await _api.patch('/trips/${widget.tripId}/$field', {bodyKey: result});
       await _load();
     } on ApiException catch (e) {
       if (!mounted) return;

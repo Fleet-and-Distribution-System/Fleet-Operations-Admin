@@ -53,9 +53,11 @@ class _DashboardSummaryScreenState extends State<DashboardSummaryScreen> {
       }
 
       double totalCost = 0;
+      double totalRevenue = 0;
       for (final t in trips) {
-        if (t['status'] == 'DELIVERED' && t['tripCost'] != null) {
-          totalCost += (t['tripCost'] as num).toDouble();
+        if (t['status'] == 'DELIVERED') {
+          if (t['tripCost'] != null) totalCost += (t['tripCost'] as num).toDouble();
+          if (t['revenue'] != null) totalRevenue += (t['revenue'] as num).toDouble();
         }
       }
 
@@ -68,6 +70,8 @@ class _DashboardSummaryScreenState extends State<DashboardSummaryScreen> {
           'totalOrders': orders.length,
           'totalTrips': trips.length,
           'totalCost': totalCost,
+          'totalRevenue': totalRevenue,
+          'totalProfit': totalRevenue - totalCost,
           'vehiclesByStatus': vehiclesByStatus,
           'tripsByStatus': tripsByStatus,
           'ordersByStatus': ordersByStatus,
@@ -112,7 +116,9 @@ class _DashboardSummaryScreenState extends State<DashboardSummaryScreen> {
             _statCard('Drivers', '${s['activeDrivers']} / ${s['totalDrivers']} active', Icons.person, Colors.teal),
             _statCard('Orders', s['totalOrders'].toString(), Icons.receipt_long, Colors.orange),
             _statCard('Trips', s['totalTrips'].toString(), Icons.route, Colors.purple),
-            _statCard('Total Cost (Delivered)', '₦${(s['totalCost'] as double).toStringAsFixed(2)}', Icons.attach_money, Colors.green),
+            _statCard('Total Cost (Delivered)', '₦${(s['totalCost'] as double).toStringAsFixed(2)}', Icons.attach_money, Colors.red),
+            _statCard('Total Revenue (Delivered)', '₦${(s['totalRevenue'] as double).toStringAsFixed(2)}', Icons.trending_up, Colors.blue),
+            _statCard('Profit (Delivered)', '₦${(s['totalProfit'] as double).toStringAsFixed(2)}', Icons.savings, Colors.green),
           ],
         ),
         const SizedBox(height: 32),
