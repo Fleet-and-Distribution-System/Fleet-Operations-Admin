@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../api/api_client.dart';
 
 Future<bool?> showDriverDetailDialog(BuildContext context, Map<String, dynamic> driver) {
@@ -22,10 +23,13 @@ class _DriverDetailDialogState extends State<_DriverDetailDialog> {
   late final TextEditingController _phoneController;
   late final TextEditingController _licenseController;
   final _api = ApiClient();
+  final _picker = ImagePicker();
 
   late bool _isActive;
+  String? _photoUrl;
   bool _saving = false;
   bool _resettingPassword = false;
+  bool _uploadingPhoto = false;
   String? _error;
   String? _resetMessage;
 
@@ -36,6 +40,27 @@ class _DriverDetailDialogState extends State<_DriverDetailDialog> {
     _phoneController = TextEditingController(text: widget.driver['phone'] ?? '');
     _licenseController = TextEditingController(text: widget.driver['licenseNumber'] ?? '');
     _isActive = widget.driver['isActive'] as bool? ?? true;
+    _photoUrl = widget.driver['photoUrl'] as String?;
+  }
+
+  Future<void> _pickAndUploadPhoto() async {
+    final picked = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked == null) return;
+
+    setState(() => _uploadingPhoto = true);
+    try {
+      final result = await _api.uploadFile('/drivers/${widget.driver['id']}/photo', 'photo', picked);
+      if (!mounted) return;
+      setState(() => _photoUrl = result['photoUrl'] as String?);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not upload photo.')));
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
   }
 
   Future<void> _saveDetails() async {
@@ -128,6 +153,37 @@ class _DriverDetailDialogState extends State<_DriverDetailDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Center(
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 42,
+                      backgroundColor: Colors.grey.shade200,
+                      backgroundImage: _photoUrl != null ? NetworkImage(_photoUrl!) : null,
+                      child: _photoUrl == null ? const Icon(Icons.person, size: 40, color: Colors.grey) : null,
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: GestureDetector(
+                        onTap: _uploadingPhoto ? null : _pickAndUploadPhoto,
+                        child: CircleAvatar(
+                          radius: 16,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          child: _uploadingPhoto
+                              ? const SizedBox(
+                                  height: 14,
+                                  width: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
               TextFormField(
                 controller: _fullNameController,
                 decoration: const InputDecoration(labelText: 'Full name *'),

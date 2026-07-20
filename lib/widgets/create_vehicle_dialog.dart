@@ -24,6 +24,7 @@ class _CreateVehicleDialogState extends State<_CreateVehicleDialog> {
   final _capacityController = TextEditingController();
   final _api = ApiClient();
 
+  String? _fuelType;
   bool _saving = false;
   String? _error;
 
@@ -41,6 +42,7 @@ class _CreateVehicleDialogState extends State<_CreateVehicleDialog> {
         if (_typeController.text.trim().isNotEmpty) 'vehicleType': _typeController.text.trim(),
         if (_capacityController.text.trim().isNotEmpty)
           'capacity': double.tryParse(_capacityController.text.trim()),
+        if (_fuelType != null) 'fuelType': _fuelType,
       });
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -76,6 +78,16 @@ class _CreateVehicleDialogState extends State<_CreateVehicleDialog> {
                 controller: _capacityController,
                 decoration: const InputDecoration(labelText: 'Capacity (kg)'),
                 keyboardType: TextInputType.number,
+              ),
+              DropdownButtonFormField<String>(
+                value: _fuelType,
+                decoration: const InputDecoration(labelText: 'Fuel / Engine type'),
+                items: const [
+                  DropdownMenuItem(value: 'DIESEL', child: Text('Diesel')),
+                  DropdownMenuItem(value: 'PETROL', child: Text('Petrol')),
+                  DropdownMenuItem(value: 'CNG', child: Text('CNG')),
+                ],
+                onChanged: (v) => setState(() => _fuelType = v),
               ),
               if (_error != null) ...[
                 const SizedBox(height: 12),

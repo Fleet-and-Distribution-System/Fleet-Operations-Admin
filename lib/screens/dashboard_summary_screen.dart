@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
+import '../theme/app_theme.dart';
 
 class DashboardSummaryScreen extends StatefulWidget {
   const DashboardSummaryScreen({super.key});
@@ -112,13 +113,13 @@ class _DashboardSummaryScreenState extends State<DashboardSummaryScreen> {
           spacing: 16,
           runSpacing: 16,
           children: [
-            _statCard('Vehicles', s['totalVehicles'].toString(), Icons.local_shipping, Colors.indigo),
-            _statCard('Drivers', '${s['activeDrivers']} / ${s['totalDrivers']} active', Icons.person, Colors.teal),
-            _statCard('Orders', s['totalOrders'].toString(), Icons.receipt_long, Colors.orange),
-            _statCard('Trips', s['totalTrips'].toString(), Icons.route, Colors.purple),
-            _statCard('Total Cost (Delivered)', '₦${(s['totalCost'] as double).toStringAsFixed(2)}', Icons.attach_money, Colors.red),
-            _statCard('Total Revenue (Delivered)', '₦${(s['totalRevenue'] as double).toStringAsFixed(2)}', Icons.trending_up, Colors.blue),
-            _statCard('Profit (Delivered)', '₦${(s['totalProfit'] as double).toStringAsFixed(2)}', Icons.savings, Colors.green),
+            _statCard(0, 'Vehicles', s['totalVehicles'].toString(), Icons.local_shipping),
+            _statCard(1, 'Drivers', '${s['activeDrivers']} / ${s['totalDrivers']} active', Icons.person),
+            _statCard(2, 'Orders', s['totalOrders'].toString(), Icons.receipt_long),
+            _statCard(3, 'Trips', s['totalTrips'].toString(), Icons.route),
+            _statCard(4, 'Total Cost (Delivered)', '\u20a6${(s['totalCost'] as double).toStringAsFixed(2)}', Icons.attach_money),
+            _statCard(5, 'Total Revenue (Delivered)', '\u20a6${(s['totalRevenue'] as double).toStringAsFixed(2)}', Icons.trending_up),
+            _statCard(0, 'Profit (Delivered)', '\u20a6${(s['totalProfit'] as double).toStringAsFixed(2)}', Icons.savings),
           ],
         ),
         const SizedBox(height: 32),
@@ -131,23 +132,30 @@ class _DashboardSummaryScreenState extends State<DashboardSummaryScreen> {
     );
   }
 
-  Widget _statCard(String label, String value, IconData icon, Color color) {
+  Widget _statCard(int gradientIndex, String label, String value, IconData icon) {
+    final gradient = AppTheme.gradients[gradientIndex % AppTheme.gradients.length];
     return Container(
       width: 220,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: gradient),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(color: gradient[0].withValues(alpha: 0.35), blurRadius: 16, offset: const Offset(0, 8)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color),
-          const SizedBox(height: 12),
-          Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, color: Colors.white, size: 20),
+          ),
+          const SizedBox(height: 16),
+          Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
           const SizedBox(height: 4),
-          Text(label, style: TextStyle(color: Colors.grey.shade700)),
+          Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13)),
         ],
       ),
     );
@@ -155,7 +163,7 @@ class _DashboardSummaryScreenState extends State<DashboardSummaryScreen> {
 
   Widget _breakdownSection(String title, Map<String, int> counts) {
     if (counts.isEmpty) {
-      return Text('$title — no data yet', style: TextStyle(color: Colors.grey.shade600));
+      return Text('$title \u2014 no data yet', style: TextStyle(color: Colors.grey.shade600));
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

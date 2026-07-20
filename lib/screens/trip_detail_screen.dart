@@ -19,6 +19,8 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   bool _actionInProgress = false;
   bool _downloadingPdf = false;
   bool _settingCost = false;
+  final _checkpointController = TextEditingController();
+  bool _postingCheckpoint = false;
 
   @override
   void initState() {
@@ -142,6 +144,52 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
             label: Text(_downloadingPdf ? 'Downloading…' : 'Download PDF'),
           ),
         ],
+        const SizedBox(height: 16),
+        _sectionTitle('Checkpoints'),
+        if (t['checkpoints'] != null && (t['checkpoints'] as List).isNotEmpty)
+          ...List<Widget>.from((t['checkpoints'] as List).map((cp) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.circle, size: 8, color: Colors.grey.shade500),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(cp['note'] ?? ''),
+                          Text(
+                            DateTime.parse(cp['createdAt']).toLocal().toString().substring(0, 16),
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )))
+        else
+          Text('No checkpoints logged yet.', style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _checkpointController,
+                decoration: const InputDecoration(hintText: 'e.g. Departed loading terminal'),
+                onSubmitted: (_) => _postCheckpoint(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilledButton(
+              onPressed: _postingCheckpoint ? null : _postCheckpoint,
+              child: _postingCheckpoint
+                  ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('Post'),
+            ),
+          ],
+        ),
         const SizedBox(height: 32),
         _buildActions(status),
       ],
@@ -211,6 +259,25 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
     if (waybill == null) return;
     final saved = await showRecordPodDialog(context, waybill['id'] as String);
     if (saved == true) await _load();
+  }
+
+  Future<void> _postCheckpoint() async {
+    final note = _checkpointController.text.trim();
+    if (note.isEmpty) return;
+    setState(() => _postingCheckpoint = true);
+    try {
+      await _api.post('/trips/${widget.tripId}/checkpoints', {'note': note});
+      _checkpointController.clear();
+      await _load();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not reach the server.')));
+    } finally {
+      if (mounted) setState(() => _postingCheckpoint = false);
+    }
   }
 
   Future<void> _showAmountDialog(String field, num? currentValue) async {

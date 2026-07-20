@@ -12,6 +12,8 @@ import '../widgets/customer_detail_dialog.dart';
 import '../widgets/order_detail_dialog.dart';
 import '../widgets/create_location_dialog.dart';
 import '../widgets/location_detail_dialog.dart';
+import '../widgets/create_maintenance_dialog.dart';
+import '../widgets/create_fuel_log_dialog.dart';
 import 'login_screen.dart';
 import 'trip_detail_screen.dart';
 import 'dashboard_summary_screen.dart';
@@ -34,6 +36,8 @@ class _HomeShellState extends State<HomeShell> {
   final _ordersController = ListRefreshController();
   final _tripsController = ListRefreshController();
   final _locationsController = ListRefreshController();
+  final _maintenanceController = ListRefreshController();
+  final _fuelController = ListRefreshController();
 
   static const _destinations = [
     (icon: Icons.dashboard, label: 'Dashboard'),
@@ -43,6 +47,8 @@ class _HomeShellState extends State<HomeShell> {
     (icon: Icons.receipt_long, label: 'Orders'),
     (icon: Icons.route, label: 'Trips'),
     (icon: Icons.place, label: 'Locations'),
+    (icon: Icons.build, label: 'Maintenance'),
+    (icon: Icons.local_gas_station, label: 'Fuel'),
   ];
 
   Future<void> _logout() async {
@@ -61,9 +67,13 @@ class _HomeShellState extends State<HomeShell> {
           endpoint: '/vehicles',
           controller: _vehiclesController,
           itemBuilder: (context, v) => ListTile(
-            leading: const Icon(Icons.local_shipping),
+            leading: CircleAvatar(
+              backgroundColor: Colors.grey.shade200,
+              backgroundImage: v['photoUrl'] != null ? NetworkImage(v['photoUrl']) : null,
+              child: v['photoUrl'] == null ? const Icon(Icons.local_shipping, color: Colors.grey) : null,
+            ),
             title: Text(v['plateNumber'] ?? ''),
-            subtitle: Text('${v['make'] ?? ''} ${v['model'] ?? ''} — ${v['vehicleType'] ?? ''}'),
+            subtitle: Text('${v['make'] ?? ''} ${v['model'] ?? ''} — ${v['vehicleType'] ?? ''}${v['fuelType'] != null ? ' (${v['fuelType']})' : ''}'),
             trailing: Chip(label: Text(v['status'] ?? '')),
             onTap: () async {
               final changed = await showVehicleDetailDialog(context, v as Map<String, dynamic>);
@@ -77,7 +87,11 @@ class _HomeShellState extends State<HomeShell> {
           endpoint: '/drivers',
           controller: _driversController,
           itemBuilder: (context, d) => ListTile(
-            leading: const Icon(Icons.person),
+            leading: CircleAvatar(
+              backgroundColor: Colors.grey.shade200,
+              backgroundImage: d['photoUrl'] != null ? NetworkImage(d['photoUrl']) : null,
+              child: d['photoUrl'] == null ? const Icon(Icons.person, color: Colors.grey) : null,
+            ),
             title: Text(d['fullName'] ?? ''),
             subtitle: Text(d['phone'] ?? ''),
             trailing: Chip(
@@ -159,6 +173,30 @@ class _HomeShellState extends State<HomeShell> {
             },
           ),
         );
+      case 7:
+        return SimpleListScreen(
+          title: 'Maintenance',
+          endpoint: '/maintenance',
+          controller: _maintenanceController,
+          itemBuilder: (context, m) => ListTile(
+            leading: const Icon(Icons.build),
+            title: Text('${m['vehicle']?['plateNumber'] ?? ''} — ${m['serviceType'] ?? ''}'),
+            subtitle: Text(m['description'] ?? ''),
+            trailing: Text(m['cost'] != null ? '₦${m['cost']}' : ''),
+          ),
+        );
+      case 8:
+        return SimpleListScreen(
+          title: 'Fuel',
+          endpoint: '/fuel',
+          controller: _fuelController,
+          itemBuilder: (context, f) => ListTile(
+            leading: const Icon(Icons.local_gas_station),
+            title: Text(f['vehicle']?['plateNumber'] ?? ''),
+            subtitle: Text('${f['quantity'] ?? ''} ${f['unit'] ?? ''}${f['station'] != null ? ' — ${f['station']}' : ''}'),
+            trailing: Text(f['cost'] != null ? '₦${f['cost']}' : ''),
+          ),
+        );
       default:
         return const SizedBox.shrink();
     }
@@ -191,10 +229,18 @@ class _HomeShellState extends State<HomeShell> {
         created = await showCreateLocationDialog(context);
         if (created == true) _locationsController.refresh();
         break;
+      case 7:
+        created = await showCreateMaintenanceDialog(context);
+        if (created == true) _maintenanceController.refresh();
+        break;
+      case 8:
+        created = await showCreateFuelLogDialog(context);
+        if (created == true) _fuelController.refresh();
+        break;
     }
   }
 
-  bool get _hasFabForCurrentTab => _selectedIndex >= 1 && _selectedIndex <= 6;
+  bool get _hasFabForCurrentTab => _selectedIndex >= 1 && _selectedIndex <= 8;
 
   @override
   Widget build(BuildContext context) {

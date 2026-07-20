@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const String apiBaseUrl = 'https://fleet-and-distribution-system-production.up.railway.app';
@@ -90,5 +92,23 @@ class ApiClient {
       throw ApiException('Download failed (${response.statusCode})', response.statusCode);
     }
     return response.bodyBytes;
+  }
+
+  Future<dynamic> uploadFile(String path, String fieldName, XFile file) async {
+    final request = http.MultipartRequest('POST', Uri.parse('$apiBaseUrl$path'));
+    final token = await _token;
+    if (token != null) request.headers['Authorization'] = 'Bearer $token';
+
+    final bytes = await file.readAsBytes();
+    request.files.add(http.MultipartFile.fromBytes(
+      fieldName,
+      bytes,
+      filename: file.name,
+      contentType: MediaType('image', 'jpeg'),
+    ));
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
+    return _handleResponse(response);
   }
 }

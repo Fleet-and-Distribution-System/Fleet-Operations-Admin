@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'api/api_client.dart';
 import 'screens/login_screen.dart';
+import 'theme/app_theme.dart';
 import 'screens/home_shell.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const FleetOpsApp());
@@ -14,7 +16,7 @@ class FleetOpsApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Fleet Ops',
-      theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
+      theme: AppTheme.light,
       home: const _StartupGate(),
     );
   }

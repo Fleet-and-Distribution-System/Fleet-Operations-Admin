@@ -20,6 +20,7 @@ class _CreateCustomerDialogState extends State<_CreateCustomerDialog> {
   final _nameController = TextEditingController();
   final _contactNameController = TextEditingController();
   final _contactPhoneController = TextEditingController();
+  final _contactEmailController = TextEditingController();
   final _api = ApiClient();
 
   bool _saving = false;
@@ -36,6 +37,7 @@ class _CreateCustomerDialogState extends State<_CreateCustomerDialog> {
         'name': _nameController.text.trim(),
         if (_contactNameController.text.trim().isNotEmpty) 'contactName': _contactNameController.text.trim(),
         if (_contactPhoneController.text.trim().isNotEmpty) 'contactPhone': _contactPhoneController.text.trim(),
+        if (_contactEmailController.text.trim().isNotEmpty) 'contactEmail': _contactEmailController.text.trim(),
       });
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -71,6 +73,11 @@ class _CreateCustomerDialogState extends State<_CreateCustomerDialog> {
               TextFormField(
                 controller: _contactPhoneController,
                 decoration: const InputDecoration(labelText: 'Contact phone'),
+              ),
+              TextFormField(
+                controller: _contactEmailController,
+                decoration: const InputDecoration(labelText: 'Contact email (for order tracking emails)'),
+                keyboardType: TextInputType.emailAddress,
               ),
               if (_error != null) ...[
                 const SizedBox(height: 12),
