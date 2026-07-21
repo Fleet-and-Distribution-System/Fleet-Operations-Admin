@@ -18,6 +18,7 @@ import 'login_screen.dart';
 import 'trip_detail_screen.dart';
 import 'dashboard_summary_screen.dart';
 import 'company_settings_screen.dart';
+import 'tracking_list_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -49,6 +50,7 @@ class _HomeShellState extends State<HomeShell> {
     (icon: Icons.place, label: 'Locations'),
     (icon: Icons.build, label: 'Maintenance'),
     (icon: Icons.local_gas_station, label: 'Fuel'),
+    (icon: Icons.map, label: 'Tracking'),
   ];
 
   Future<void> _logout() async {
@@ -197,6 +199,8 @@ class _HomeShellState extends State<HomeShell> {
             trailing: Text(f['cost'] != null ? '₦${f['cost']}' : ''),
           ),
         );
+      case 9:
+        return const TrackingListScreen();
       default:
         return const SizedBox.shrink();
     }
@@ -240,7 +244,7 @@ class _HomeShellState extends State<HomeShell> {
     }
   }
 
-  bool get _hasFabForCurrentTab => _selectedIndex >= 1 && _selectedIndex <= 8;
+  bool get _hasFabForCurrentTab => _selectedIndex >= 1 && _selectedIndex <= 8;  // index 9 (Tracking) intentionally has no FAB
 
   @override
   Widget build(BuildContext context) {

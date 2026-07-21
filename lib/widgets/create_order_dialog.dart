@@ -24,11 +24,19 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
   final _api = ApiClient();
 
   List<dynamic>? _customers;
-  List<String> _locationNames = [];
+  List<dynamic> _locations = [];
   String? _selectedCustomerId;
   String _priority = 'normal';
   bool _saving = false;
   String? _error;
+
+  // Coordinates captured when a saved Location chip is tapped — cleared if
+  // the person then hand-edits the text field, since free-typed text has no
+  // known coordinates to attach.
+  double? _pickupLat;
+  double? _pickupLng;
+  double? _destinationLat;
+  double? _destinationLng;
 
   @override
   void initState() {
@@ -53,10 +61,7 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
       final result = await _api.get('/locations');
       if (!mounted) return;
       setState(() {
-        _locationNames = (result as List<dynamic>)
-            .where((l) => l['isActive'] == true)
-            .map((l) => l['name'] as String)
-            .toList();
+        _locations = (result as List<dynamic>).where((l) => l['isActive'] == true).toList();
       });
     } catch (e) {
       // Non-fatal
@@ -77,7 +82,11 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
       await _api.post('/orders', {
         'customerId': _selectedCustomerId,
         'pickupLocation': _pickupController.text.trim(),
+        if (_pickupLat != null) 'pickupLat': _pickupLat,
+        if (_pickupLng != null) 'pickupLng': _pickupLng,
         'destinationLocation': _destinationController.text.trim(),
+        if (_destinationLat != null) 'destinationLat': _destinationLat,
+        if (_destinationLng != null) 'destinationLng': _destinationLng,
         if (_cargoController.text.trim().isNotEmpty) 'cargoDescription': _cargoController.text.trim(),
         if (_weightController.text.trim().isNotEmpty)
           'quantityLitres': double.tryParse(_weightController.text.trim()),
@@ -98,6 +107,7 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
     required TextEditingController controller,
     required String label,
     required String? Function(String?) validator,
+    required bool isPickup,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,18 +116,43 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
           controller: controller,
           decoration: InputDecoration(labelText: label),
           validator: validator,
-          onChanged: (_) => setState(() {}),
+          onChanged: (_) => setState(() {
+            // Free-typed text has no known coordinates — clear whatever was
+            // captured from a chip tap so we don't silently attach stale/wrong coords.
+            if (isPickup) {
+              _pickupLat = null;
+              _pickupLng = null;
+            } else {
+              _destinationLat = null;
+              _destinationLng = null;
+            }
+          }),
         ),
-        if (_locationNames.isNotEmpty) ...[
+        if (_locations.isNotEmpty) ...[
           const SizedBox(height: 6),
           Wrap(
             spacing: 6,
             runSpacing: -8,
-            children: _locationNames.map((name) {
+            children: _locations.map((loc) {
+              final hasCoords = loc['lat'] != null && loc['lng'] != null;
               return ActionChip(
-                label: Text(name, style: const TextStyle(fontSize: 12)),
+                label: Text(
+                  '${loc['name']}${hasCoords ? '' : ' (no coords)'}',
+                  style: const TextStyle(fontSize: 12),
+                ),
                 visualDensity: VisualDensity.compact,
-                onPressed: () => setState(() => controller.text = name),
+                onPressed: () => setState(() {
+                  controller.text = loc['name'] as String;
+                  final lat = (loc['lat'] as num?)?.toDouble();
+                  final lng = (loc['lng'] as num?)?.toDouble();
+                  if (isPickup) {
+                    _pickupLat = lat;
+                    _pickupLng = lng;
+                  } else {
+                    _destinationLat = lat;
+                    _destinationLng = lng;
+                  }
+                }),
               );
             }).toList(),
           ),
@@ -160,11 +195,13 @@ class _CreateOrderDialogState extends State<_CreateOrderDialog> {
                             controller: _pickupController,
                             label: 'Pickup location *',
                             validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                            isPickup: true,
                           ),
                           _locationField(
                             controller: _destinationController,
                             label: 'Destination *',
                             validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                            isPickup: false,
                           ),
                           TextFormField(
                             controller: _cargoController,

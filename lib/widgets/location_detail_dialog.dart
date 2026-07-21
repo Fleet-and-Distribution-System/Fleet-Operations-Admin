@@ -21,6 +21,8 @@ class _LocationDetailDialogState extends State<_LocationDetailDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _typeController;
   late final TextEditingController _addressController;
+  late final TextEditingController _latController;
+  late final TextEditingController _lngController;
   final _api = ApiClient();
 
   late bool _isActive;
@@ -33,6 +35,8 @@ class _LocationDetailDialogState extends State<_LocationDetailDialog> {
     _nameController = TextEditingController(text: widget.location['name'] ?? '');
     _typeController = TextEditingController(text: widget.location['type'] ?? '');
     _addressController = TextEditingController(text: widget.location['address'] ?? '');
+    _latController = TextEditingController(text: widget.location['lat']?.toString() ?? '');
+    _lngController = TextEditingController(text: widget.location['lng']?.toString() ?? '');
     _isActive = widget.location['isActive'] as bool? ?? true;
   }
 
@@ -47,6 +51,8 @@ class _LocationDetailDialogState extends State<_LocationDetailDialog> {
         'name': _nameController.text.trim(),
         'type': _typeController.text.trim(),
         'address': _addressController.text.trim(),
+        if (_latController.text.trim().isNotEmpty) 'lat': double.tryParse(_latController.text.trim()),
+        if (_lngController.text.trim().isNotEmpty) 'lng': double.tryParse(_lngController.text.trim()),
       });
       if (_isActive != (widget.location['isActive'] as bool? ?? true)) {
         await _api.patch('/locations/${widget.location['id']}/active', {'isActive': _isActive});
@@ -88,6 +94,26 @@ class _LocationDetailDialogState extends State<_LocationDetailDialog> {
               TextFormField(
                 controller: _addressController,
                 decoration: const InputDecoration(labelText: 'Address'),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _latController,
+                      decoration: const InputDecoration(labelText: 'Latitude'),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _lngController,
+                      decoration: const InputDecoration(labelText: 'Longitude'),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
               SwitchListTile(
